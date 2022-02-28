@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  db:
+    environment:
+      - POSTGRES_USER=$PGUSER
+      - POSTGRES_PASSWORD=$PGPASSWORD
+      - POSTGRES_DB=$PGDATABASE
+    image: camptocamp/postgres:12
+    ports:
+      - 5432
+    volumes:
+      - .db/:/var/lib/postgresql/data
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
+#      - type: tmpfs
+#        target: /dev/shm
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: always
+      
+  odoo:
+    restart: always
+    build:
+      context: ./odoo
+      target: prod
+    image: "${COMPOSE_PROJECT_NAME}-prod"
+    depends_on:
+      - db
+    volumes:
+      - ./odoo:/odoo
+      - ./data/addons:/data/odoo/addons
+      - ./data/filestore:/data/odoo/filestore
+      - ./data/sessions:/data/odoo/sessions
+      - ./data/backups:/data/odoo/backups
+    environment:
+      - DEMO=False
+      - MARABUNTA_MODE=prod
+#      - MIGRATE=false
+      - DB_FILTER=.*
+      - LIST_DB=True
+      - ADMIN_PASSWD=$ADMIN_PASSWD
+      - SERVER_WIDE_MODULES=web,bi_view_editor
+      - WITHOUT_DEMO=all
+#      - ODOO_BASE_URL=https://${DOMAIN}
+#      - PGSSLMODE=require
+      # Inicializar db -Demo=false e migrate=true or disable, marabunta=demo EM DOCKER-COMPOSE.YAML
+      # you can specify your own addons path, if you don't want to use links
+      - ADDONS_PATH=/odoo/links,/odoo/local-src,/odoo/src/odoo/addons,/odoo/src/addons,/odoo/external-src/l10n-brazil,/odoo/external-src/account-invoicing,/odoo/external-src/stock-logistics-workflow,/odoo/external-src/dms,/odoo/external-src/web,/odoo/external-src/social,/odoo/external-src/bank-statement-import,/odoo/external-src/server-ux,/odoo/external-src/account-reconcile,/odoo/external-src/product-attribute,/odoo/external-src/stock-logistics-barcode,/odoo/external-src/stock-logistics-warehouse,/odoo/external-src/purchase-workflow,/odoo/external-src/sale-workflow,/odoo/external-src/pos,/odoo/external-src/credit-control,/odoo/external-src/account-payment,/odoo/external-src/contract,/odoo/external-src/sale-reporting,/odoo/external-src/purchase-reporting,/odoo/external-src/stock-logistics-reporting,/odoo/external-src/account-invoice-reporting,/odoo/external-src/server-tools,/odoo/external-src/reporting-engine,/odoo/external-src/mis-builder,/odoo/external-src/account-financial-reporting,/odoo/external-src/margin-analysis,/odoo/external-src/bank-payment
+      - LIMIT_TIME_CPU=2400
+      - LIMIT_TIME_REAL=4800
+      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=8069"
+      - "traefik.http.routers.odoo.rule=Host(`odoo.localhost`)"
+      - "traefik.http.routers.odoo_long.rule=Host(`odoo.localhost`) && PathPrefix(`/longpolling/`)"
+      - "traefik.http.services.odoo_long.loadbalancer.server.port=8072"
+    links:
+      - db
+    
+  traefik:
+      image: traefik:v2.1
+      command:
+        --api.insecure --providers.docker --providers.docker.exposedbydefault="false"
+      ports:
+          - "127.0.0.1:80:80"
+          - "127.0.0.1:443:443"
+          - "127.0.0.1:8080:8080"
+      volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+      networks:
+        default:
+          aliases:
+            - odoo.localhost
+
