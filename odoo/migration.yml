@@ -1,0 +1,14 @@
+migration:
+  options:
+    install_command: odoo
+#    install_args: --log-level=info
+  versions:
+    - version: setup
+      operations:
+        pre:
+          - "sh -c 'psql -c \"CREATE EXTENSION IF NOT EXISTS pg_trgm;\"'"
+        post:
+          - anthem songs.install.base::main
+      addons:
+        upgrade:
+          - l10n_br_base

@@ -1,0 +1,136 @@
+odoo:
+#    modules: []
+# do not forget to define the complete list
+# of odoo core modules
+  src: https://github.com/odoo/odoo 12.0
+  depth: 1
+#  shell_command_after:
+#      - git tag merge-odoo-$(date --iso)
+
+# Recommanded way: prefer short syntax without merges
+# all stable modules from main branch
+l10n-brazil:
+    modules: []
+    src: https://github.com/OCA/l10n-brazil 12.0
+#shell_command_after:
+#   - git tag "$(date --iso)"
+    
+account-invoicing:
+    modules: []
+    src: https://github.com/OCA/account-invoicing 12.0
+    
+stock-logistics-workflow:    
+    modules: []
+    src: https://github.com/OCA/stock-logistics-workflow 12.0   
+    
+dms:
+    modules: []
+    src: https://github.com/OCA/dms 12.0
+    
+web:
+    modules: []
+    src: https://github.com/OCA/web 12.0
+    
+social:
+    modules: []
+    src: https://github.com/OCA/social 12.0
+    
+bank-statement-import:
+    modules: []
+    src: https://github.com/OCA/bank-statement-import 12.0
+    
+server-ux:
+    modules: []
+    src: https://github.com/OCA/server-ux 12.0
+    
+account-reconcile:
+    modules: []
+    src: https://github.com/OCA/account-reconcile 12.0
+    
+product-attribute:
+    modules: []
+    src: https://github.com/OCA/product-attribute 12.0
+    
+stock-logistics-barcode:
+    modules: []
+    src: https://github.com/OCA/stock-logistics-barcode 12.0
+    
+stock-logistics-warehouse:
+    modules: []
+    src: https://github.com/OCA/stock-logistics-warehouse 12.0
+
+purchase-workflow:
+    modules: []
+    src: https://github.com/OCA/purchase-workflow 12.0
+    
+sale-workflow:
+    modules: []
+    src: https://github.com/OCA/sale-workflow 12.0
+    
+pos:
+    modules: []
+    src: https://github.com/OCA/pos 12.0
+    
+credit-control:
+    modules: []
+    src: https://github.com/OCA/credit-control 12.0
+    
+account-payment:
+    modules: []
+    src: https://github.com/OCA/account-payment 12.0
+    
+contract:
+    modules: []
+    src: https://github.com/OCA/contract 12.0
+    
+sale-reporting:
+    modules: []
+    src: https://github.com/OCA/sale-reporting 12.0
+    
+purchase-reporting:
+    modules: []
+    src: https://github.com/OCA/purchase-reporting 12.0
+    
+stock-logistics-reporting:
+    modules: []
+    src: https://github.com/OCA/stock-logistics-reporting 12.0
+    
+account-invoice-reporting:
+    modules: []
+    src: https://github.com/OCA/account-invoice-reporting 12.0
+    
+server-tools:
+    modules: []
+    src: https://github.com/OCA/server-tools 12.0
+    
+reporting-engine:
+    modules: []
+    src: https://github.com/OCA/reporting-engine 12.0
+    
+mis-builder:
+    modules: []
+    src: https://github.com/OCA/mis-builder 12.0
+    
+account-financial-reporting:
+    modules: []
+    src: https://github.com/OCA/account-financial-reporting 12.0
+    
+margin-analysis:
+    modules: []
+    src: https://github.com/OCA/margin-analysis 12.0
+    
+bank-payment:
+    modules: []
+    src: https://github.com/OCA/bank-payment 12.0
+    
+
+
+
+
+    
+
+    
+
+
+
+    
