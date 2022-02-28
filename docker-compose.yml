@@ -1,0 +1,20 @@
+services:
+  odoo:
+    environment:
+      - PYTHONDONTWRITEBYTECODE=True
+      - LOCAL_USER_ID=$UID
+      - RUNNING_ENV=$ENV
+      - MARABUNTA_MODE=prod
+      - DB_HOST=$PGHOST
+      - DB_NAME=$PGDATABASE
+      - DB_USER=$PGUSER
+      - DB_PASS=$PGPASSWORD
+      - PGHOST=$PGHOST
+      - PGDATABASE=$PGDATABASE
+      - PGUSER=$PGUSER
+      - PGPASSWORD=$PGPASSWORD
+    hostname: ${ENV}-${COMPOSE_PROJECT_NAME}
+    labels:
+      docky.main.service: true
+      docky.user: odoo
+version: '3.9'
