@@ -1,0 +1,76 @@
+Esquema do projeto docker com odoo source
+
+1 - Docky template | git clone --branch 14.0 https://github.com/akretion/docky-odoo-template  #ver branch
+
+2 - Install ak  - pip install git+https://github.com/akretion/ak.git@master
+
+3 - Baixando as fontes
+    a) cd odoo  - edit e insert sources in spec.yaml
+    b) ak build
+    c) - ADDONS_PATH=/odoo/links,/odoo/local-src,/odoo/src/odoo/addons,/odoo/src/addons,/odoo/external-src/web, ... # add path em enviroment de services odoo  | dev.docker-compose.yaml 
+    
+4 - migration.yml
+    a) - version: setup
+    b) - addons: upgrade: contacts
+    C) VERSION
+    d) setup.py
+    e) songs
+    
+5 - Dockerfile
+    a) FROM - *batteries, create or information image base
+    
+6 - .env
+
+7 - compose.yaml
+
+	# Inicializar db -Demo=false e migrate=true or disable, marabunta=demo
+	
+	
+	
+	
+	
+******************************************************************************************************	
+https://github.com/odoo/odoo/issues/27447	
+	#Inicializar db (-i base)
+		
+De alguma forma conseguiu funcionar por:
+
+	docker-compose exec web bash odoo -i base -d odoo --stop-after-init --db_host=db -r odoo -w odoo
+	
+	docker-compose run odoo bash $ odoo --init base --database odoo --stop-after-init --db_host=database --db_user odoo --db_password strongpass
+...
+re-up usando docker-compose up
+
+
+****************************************************************************************************
+Restore database   $$ ATENCAO $$
+
+        1 - ao inicializar um db novo o marabunta=demo em docker-compose.yml, é responsável por instalar recursos, que ao excluir o db, não perca conexao com servidor *IMPORTANTE* migrate=false desabilitar
+	2 - manage database, delete db
+	    - sudo rm -rf .db 
+	    - sudo rm -rf data
+	3 - restore database com nome (NOME DB DEFINIDO EM DATABASE .ENV) 
+	4 - alterar prod.docker-compose para migrate=false, apos restaurar
+
+    
+    
+    
+    
+    
+*****************************************************************************************************
+                                     pgAdmin
+*****************************************************************************************************
+
+	sudo chown -R 5050:5050 <host_directory>
+
+
+https://stackoverflow.com/questions/64781245/permission-denied-var-lib-pgadmin-sessions-in-docker
+
+
+
+
+
+
+
+                                     
+    
