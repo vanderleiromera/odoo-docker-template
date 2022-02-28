@@ -1,0 +1,149 @@
+stages:
+  - build
+  - migrate
+  - review
+  - review_preprod
+  - deploy
+  - sentry
+
+# Variables to be set on group / project in gitlab variables:
+
+# CI_DOMAIN
+# CI_TOOLS_REPOSITORY_URL
+# SENTRY_DSN
+
+before_script:
+  - rm -rf bin
+  - git clone $CI_TOOLS_REPOSITORY_URL -b new-infra bin/
+  - export PATH=$PATH:${PWD}/bin
+  - export BUILD_NAME=${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_IID:-preprod}
+  - export DOMAIN="${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod}.${CI_DOMAIN}"
+  - export COMPOSE_PROJECT_NAME=${BUILD_NAME}
+  - cp .env-ci .env
+
+clean-btrfs:
+  stage: build
+  script:
+    - rm -rf ~/btrfs/${CI_PROJECT_NAME}/odoo/external-src/*
+    - rm -rf ~/btrfs/${CI_PROJECT_NAME}/odoo/src
+    - mkdir ~/btrfs/${CI_PROJECT_NAME}/odoo/src
+    - cd ~/btrfs/${CI_PROJECT_NAME}/odoo/src && git init
+  when: manual
+  allow_failure: true
+
+clean-docker:
+  stage: build
+  script:
+    - docker system prune -f
+  when: manual
+
+build:
+  stage: build
+  before_script:
+    - sudo CI_PIPELINE_ID=$CI_PIPELINE_ID CI_PROJECT_NAME=$CI_PROJECT_NAME CI_REPOSITORY_URL=$CI_REPOSITORY_URL ~/prepare_btrfs.sh
+    # do it twice because before_script is redefined
+    - export BUILD_NAME=${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_IID:-preprod}  
+    - export DOMAIN="${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod}.${CI_DOMAIN}"
+    - export COMPOSE_PROJECT_NAME=${BUILD_NAME}
+    - cp .env-ci .env
+  script:
+    - cd odoo && ak clone && ak sparse && ak build && cd ..
+    - DOCKER_BUILDKIT=1 docker-compose build
+  after_script:
+    - sudo CI_PIPELINE_ID=$CI_PIPELINE_ID CI_PROJECT_NAME=$CI_PROJECT_NAME ~/cleanup_btrfs.sh
+  only:
+    - merge_requests
+    - "master"
+    - "main"
+
+migrate:
+  stage: migrate
+  script:
+    - echo $CI_MERGE_REQUEST_LABELS | grep keepdb || ci-getdb
+    # ci-getdevdb pour avoir une base vierge
+    - docker-compose run odoo gosu odoo click-odoo-update
+  only:
+    - merge_requests
+    - "master"
+    - "main"
+
+review:
+  stage: review
+  script:
+    - docker-compose run odoo chown odoo /data/odoo/addons /data/odoo/filestore /data/odoo/sessions 
+    - docker-compose up -d
+  environment:
+    name: test/${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_IID}
+    url: https://${DOMAIN}
+    on_stop: stop_review
+  only:
+    - merge_requests
+
+stop_review:
+  stage: review
+  script:
+    - docker-compose down --rmi local --volumes
+  environment:
+    name: test/${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_IID}
+    action: stop
+  when: manual
+  only:
+    - merge_requests
+
+review_preprod:
+  stage: review_preprod
+  script:
+    - ci-getdb
+    - docker-compose up -d
+  environment:
+    name: preprod
+    url: https://${CI_PROJECT_NAME}_preprod.${CI_DOMAIN}
+  only:
+    - "14.0"
+    - "master"
+    - "main"
+
+deploy:
+  stage: deploy
+  before_script:
+    - mkdir odoo/src
+    - mkdir odoo/external-src
+    - cp .env-ci .env
+    # git init into odoo because we do not use modules key
+    - cd odoo/src && git init && cd ../../
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    BUILD_NAME: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    COMPOSE_PROJECT_NAME: ${CI_PROJECT_NAME}-${CI_COMMIT_SHA}
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - cd odoo && ak clone && ak sparse && ak build && cd ..
+    - DOCKER_BUILDKIT=1 docker-compose build
+    - docker-compose push
+    - BUILD_NAME=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA docker-compose build
+    - BUILD_NAME=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA docker-compose push
+  when: manual
+  only:
+    - "14.0"
+    - "master"
+    - "main"
+
+sentry:
+  stage: sentry
+  image:
+    name: getsentry/sentry-cli
+    entrypoint: [""]
+  script:
+    - env | grep SENTRY > sentry.env
+    - docker run --env-file sentry.env getsentry/sentry-cli info
+    - export PWD=`pwd`
+    - echo $PWD
+    - export VERSION=`docker run --env-file sentry.env -v $PWD:/work getsentry/sentry-cli releases propose-version`
+    - docker run --env-file sentry.env -v $PWD:/work  getsentry/sentry-cli releases new $VERSION --finalize
+    - docker run --env-file sentry.env -v $PWD:/work  getsentry/sentry-cli releases set-commits $VERSION --auto
+  only:
+    - "14.0"
+    - "master"
+    - "main"
+  needs:
+    - deploy
