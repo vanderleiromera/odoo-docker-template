@@ -1,4 +1,5 @@
-FROM camptocamp/odoo-project:12.0-buster-latest-batteries as base
+#FROM camptocamp/odoo-project:12.0-buster-latest-batteries as base
+FROM ghcr.io/camptocamp/odoo-project:12.0-buster-latest-batteries as base
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     git \
