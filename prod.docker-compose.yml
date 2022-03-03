@@ -1,5 +1,12 @@
 version: "3.9"
 
+
+networks:
+  local:
+  web:
+# external=true, deve ter a rede criada anteriormente \ ou refere-se rede externa- web..  
+    external: false
+
 services:
   db:
     environment:
@@ -12,9 +19,9 @@ services:
     volumes:
       - .db/:/var/lib/postgresql/data
       - ./postgres.conf:/etc/postgresql/postgresql.conf
-#      - type: tmpfs
-#        target: /dev/shm
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - local
     restart: always
       
   odoo:
@@ -51,24 +58,31 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.port=8069"
-      - "traefik.http.routers.odoo.rule=Host(`odoo.localhost`)"
-      - "traefik.http.routers.odoo_long.rule=Host(`odoo.localhost`) && PathPrefix(`/longpolling/`)"
+      - "traefik.http.routers.odoo.rule=Host(`${ODOO_TRAEFIK_URL}`)"
+      - "traefik.http.routers.odoo_long.rule=Host(`${ODOO_TRAEFIK_URL}`) && PathPrefix(`/longpolling/`)"
       - "traefik.http.services.odoo_long.loadbalancer.server.port=8072"
-    links:
-      - db
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+    networks:
+      - local
+      - web
     
   traefik:
-      image: traefik:v2.1
-      command:
-        --api.insecure --providers.docker --providers.docker.exposedbydefault="false"
-      ports:
-          - "127.0.0.1:80:80"
-          - "127.0.0.1:443:443"
-          - "127.0.0.1:8080:8080"
-      volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-      networks:
-        default:
-          aliases:
-            - odoo.localhost
+    image: traefik:v2.1
+    command:
+ #     - "--log.level=DEBUG"
+      - "--api.insecure" 
+      - "--providers.docker" 
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.defaultRule=Host(`{{ trimPrefix `/` .Name }}.${TRAEFIK_DEFAULT_DOMAIN}`)"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+       # The Web UI (enabled by --api.insecure=true)
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - web
 
