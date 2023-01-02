@@ -6,7 +6,7 @@ psycopg2-binary
 # Localizacao Brasil
 num2words==0.5.4
 pycep-correios==5.0.0
-workalendar==7.1.1
+workalendar==17.0.0
 erpbrasil.base==2.2.2
 erpbrasil.assinatura==1.2.0
 erpbrasil.transmissao==1.0.0
